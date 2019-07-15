@@ -29,7 +29,6 @@ class Particle:
         self.angle = 0
         self.colour = colours['particle']
         self.size = 8
-        self.speed = 4
         self.moving = False
         self.moving_dir = []
 
@@ -60,15 +59,18 @@ class Particle:
         ## Moving the particle
         for dir in self.moving_dir:
             if dir == 'w':
-                new_pos = self.pos + self.dir * self.speed
+                d_pos = self.dir
             elif dir == 'a':
-                new_pos = self.pos + self.dir.perpendicular() * self.speed
+                d_pos = self.dir.perpendicular()
             elif dir == 's':
-                new_pos = self.pos - self.dir * self.speed
+                d_pos = self.dir * -1
             elif dir == 'd':
-                new_pos = self.pos - self.dir.perpendicular() * self.speed
+                d_pos = self.dir.perpendicular() * -1
+            else: d_pos = Vec2D(0, 0)
+            new_pos = self.pos + d_pos * particle_speed
             if 0 < new_pos.x < surf_width - boundary_width and 0 < new_pos.y < surf_height - boundary_width:  ## If in screen
-                self.pos = new_pos
+                if surf_2D.get_at((new_pos + (d_pos * self.size / 2)).tuple()) == colours['background']:
+                    self.pos = new_pos
 
         self.cast()
 
@@ -159,13 +161,13 @@ class Segment:
 
 ## Shape class designed for shapes with sides that do not intersect
 class Shape:
-    def __init__(self, sides, colour, points, width=0):
+    def __init__(self, sides, colour, points, fill=True):
         if sides != len(points): raise IndexError("Invalid length of point list")
         self.sides = sides
         self.points = points
         self.segments = [Segment(self.points[i], self.points[(i + 1) % self.sides]) for i in range(self.sides)]
         self.colour = colour
-        self.width = width
+        self.width = 0 if fill else particle_speed
 
     def show(self):
         pygame.draw.polygon(surf_2D, self.colour, [point.tuple() for point in self.points], self.width)
@@ -186,9 +188,9 @@ def render3D(dist_list):
     line_width = surf_width / num_rays
     for i in range(num_rays):
         if dist_list[i] <= render_dist:
-            line_height = map(dist_list[i], 0, render_dist, surf_height, 0)#farthest_dist / dist_list[i]
+            line_height = map(dist_list[i], 0, render_dist, surf_height, 0) # farthest_dist / dist_list[i] ## Calculate each lines height relative to the ray's distance
             rect = pygame.Rect(i * line_width, surf_height / 2 - line_height / 2, line_width, line_height)
-            colour = map(dist_list[i], 0, render_dist, 255, 0)
+            colour = map(dist_list[i], 0, render_dist, 255, 0) ## Calculate colour based on distance, eg. farther away, darker
             pygame.draw.rect(surf_3D, [colour] * 3, rect)
 
 # CONSTANTS
@@ -199,30 +201,27 @@ draw_light = False ## Draw light polygon
 num_rays = 100 ## Number of rays to be cast
 farthest_dist = math.sqrt(surf_width ** 2 + surf_height ** 2) ## Calculate farthest possible distance for render3D()
 render_dist = farthest_dist ## Maximum distance for rendering
-mouse_sensitivity = 0.5 ## Self-explanatory
+mouse_sensitivity = 0.4 ## Self-explanatory
+particle_speed = 4 ## Number of pixels travelled per frame by Particle
 
 def setup():
     global finished, particle, segments, shapes, surf_2D, surf_3D
     finished = False
 
     ## Particle(starting_pos)
-    particle = Particle(Vec2D(surf_width / 2, surf_height / 2))
-
-    segments = []
-    ## Random walls
-    for i in range(5):
-        p1 = Vec2D(random.randint(0, surf_width), random.randint(0, surf_height))
-        p2 = Vec2D(random.randint(0, surf_width), random.randint(0, surf_height))
-        segments.append(Segment(p1, p2))
+    particle = Particle(Vec2D(100, 300))
 
     ## Custom shapes
     shapes = [
         ## Bounding box
-        Shape(4, colours['boundary'], [Vec2D(0, 0), Vec2D(surf_width - boundary_width, 0), Vec2D(surf_width - boundary_width, surf_height - boundary_width), Vec2D(0, surf_height - boundary_width)], boundary_width),
-        ## Test octagon
-        Shape(8, (120, 255, 255), [Vec2D(358, 108), Vec2D(282, 108), Vec2D(228, 162), Vec2D(228, 238), Vec2D(282, 292), Vec2D(358, 292), Vec2D(412, 238), Vec2D(412, 162)], 2)
+        Shape(4, colours['boundary'], [Vec2D(0, 0), Vec2D(surf_width - boundary_width, 0), Vec2D(surf_width - boundary_width, surf_height - boundary_width), Vec2D(0, surf_height - boundary_width)], fill=False),
+        ## Test shapes
+        Shape(8, (120, 255, 255), [Vec2D(358, 108), Vec2D(282, 108), Vec2D(228, 162), Vec2D(228, 238), Vec2D(282, 292), Vec2D(358, 292), Vec2D(412, 238), Vec2D(412, 162)]),
+        Shape(6, (120, 255, 255), [Vec2D(50, 50), Vec2D(50, 150), Vec2D(85, 150), Vec2D(85, 100), Vec2D(120, 100), Vec2D(120, 50)])
+
     ]
 
+    segments = []
     for shape in shapes:
         for side in shape.segments:
             segments.append(side)
@@ -257,17 +256,14 @@ while True:
                     particle.moving_dir.remove(chr(event.key))
                 except ValueError: pass ## To catch error when resetting while still moving
 
+    for shape in shapes:
+        shape.show()
+
     particle.update(getRelMousePos(), segments)
     particle.show()
 
     dists = particle.calcDists()
     render3D(dists)
-
-    for segment in segments:
-        segment.show()
-
-    for shape in shapes:
-        shape.show()
 
     screen.blit(surf_2D, (0, 0))
     screen.blit(surf_3D, (surf_width, 0))
