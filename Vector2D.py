@@ -31,3 +31,9 @@ class Vec2D:
     def tuple(self):
         """Returns tuple (int(x), int(y))"""
         return (int(self.x), int(self.y))
+
+    def normalise(self):
+        return self / abs(self)
+
+    def perpendicular(self):
+        return self.__class__(self.y, -self.x)

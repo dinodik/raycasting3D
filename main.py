@@ -19,20 +19,13 @@ colours = {
     'boundary': (255, 120, 0)
 }
 
-particle_speed = 4
-directions = {
-    'w': Vec2D(0, -particle_speed),
-    'a': Vec2D(-particle_speed, 0),
-    's': Vec2D(0, particle_speed),
-    'd': Vec2D(particle_speed, 0)
-}
-
 class Particle:
     def __init__(self, pos):
         self.pos = pos
         self.fov = math.pi / 2
         self.colour = colours['particle']
         self.size = 8
+        self.speed = 4
         self.moving = False
         self.moving_dir = []
 
@@ -50,15 +43,23 @@ class Particle:
         return dist_list
 
     def update(self, lookingAt, walls):
-        ## Moving the particle
-        for dir in self.moving_dir:
-            new_pos = self.pos + directions[dir]
-            if 0 < new_pos.x < surf_width and 0 < new_pos.y < surf_height: ## If in screen
-                self.pos = new_pos
-
         ## Set viewing angle to determine FOV range
         self.angle = self.pos.angleTo(lookingAt)
         self.dir = lookingAt - self.pos
+
+        ## Moving the particle
+        front = self.dir.normalise()
+        for dir in self.moving_dir:
+            if dir == 'w':
+                new_pos = self.pos + front * self.speed
+            elif dir == 'a':
+                new_pos = self.pos + front.perpendicular() * self.speed
+            elif dir == 's':
+                new_pos = self.pos - front * self.speed
+            elif dir == 'd':
+                new_pos = self.pos - front.perpendicular() * self.speed
+            if 0 < new_pos.x < surf_width and 0 < new_pos.y < surf_height:  ## If in screen
+                self.pos = new_pos
 
         self.cast()
 
@@ -177,7 +178,7 @@ eps = 0.00001 ## Very small number
 boundary_width = 2 ## Width of the boundary lines
 draw_rays = True ## Draw individual rays
 draw_light = False ## Draw light polygon
-num_rays = 100
+num_rays = 100 ## Number of rays to be cast
 
 def setup():
     global finished, particle, segments, shapes, surf_2D, surf_3D
@@ -221,7 +222,7 @@ while True:
             sys.exit()
         ## Detecting WASD inputs for moving particle
         if event.type == pygame.KEYDOWN:
-            if chr(event.key) in directions.keys():
+            if chr(event.key) in ['w', 'a', 's', 'd']:
                 particle.moving = True
                 particle.moving_dir.append(chr(event.key))
             ## Reset
@@ -229,7 +230,7 @@ while True:
                 setup()
         ## Stop moving
         elif event.type == pygame.KEYUP:
-            if chr(event.key) in directions.keys():
+            if chr(event.key) in ['w', 'a', 's', 'd']:
                 particle.moving = False
                 try:
                     particle.moving_dir.remove(chr(event.key))
