@@ -8,7 +8,7 @@ width, height = 1280, 400
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Ray Casting")
 
-surf_width, surf_height = width / 2, height
+surf_width, surf_height = int(width / 2), height
 
 colours = {
     'background': (50, 50, 50),
@@ -22,7 +22,7 @@ colours = {
 class Particle:
     def __init__(self, pos):
         self.pos = pos
-        self.fov = math.pi / 2
+        self.fov = math.pi / 3
         self.colour = colours['particle']
         self.size = 8
         self.speed = 4
@@ -31,14 +31,20 @@ class Particle:
 
     def cast(self):
         self.rays = []
+        angle_per_ray = self.fov / num_rays
         for i in range(num_rays):
             start_angle = self.angle - self.fov / 2
-            self.rays.append(Ray(self.pos, start_angle + i * (self.fov / num_rays)))
+            self.rays.append(Ray(self.pos, start_angle + i * angle_per_ray))
 
     def calcDists(self):
         dist_list = []
+        angle_per_ray = self.fov / num_rays
         for i in range(num_rays):
             dist = self.pos.distTo(self.points[i])
+            ## Correct fish-eye effect
+            # angle = self.angle - self.fov / 2 + i * angle_per_ray
+            # perp_dist = abs(math.cos(angle) * dist)
+            # dist_list.append(perp_dist)
             dist_list.append(dist)
         return dist_list
 
@@ -166,13 +172,16 @@ def getMousePos():
     mouse_pos = Vec2D(*pygame.mouse.get_pos())
     return mouse_pos
 
+def map(val, in_min, in_max, out_min, out_max):
+    return out_min + ((out_max - out_min) / (in_max - in_min) * (val - in_min))
+
 def render3D(dist_list):
-    pixel_width = surf_width / num_rays
+    line_width = surf_width / num_rays
     for i in range(num_rays):
         if dist_list[i] <= render_dist:
-            pixel_height = farthest_dist / dist_list[i]
-            rect = pygame.Rect(i * pixel_width, surf_height / 2 - pixel_height / 2, pixel_width, pixel_height)
-            colour = 255 - (255 / render_dist) * dist_list[i] ## Mapping 0 -> render_dist to 255 -> 0
+            line_height = map(dist_list[i], 0, render_dist, surf_height, 0)#farthest_dist / dist_list[i]
+            rect = pygame.Rect(i * line_width, surf_height / 2 - line_height / 2, line_width, line_height)
+            colour = map(dist_list[i], 0, render_dist, 255, 0)
             pygame.draw.rect(surf_3D, [colour] * 3, rect)
 
 # CONSTANTS
@@ -182,7 +191,7 @@ draw_rays = True ## Draw individual rays
 draw_light = False ## Draw light polygon
 num_rays = 100 ## Number of rays to be cast
 farthest_dist = math.sqrt(surf_width ** 2 + surf_height ** 2) ## Calculate farthest possible distance for render3D()
-render_dist = farthest_dist / 2 ## Maximum distance for rendering
+render_dist = farthest_dist ## Maximum distance for rendering
 
 def setup():
     global finished, particle, segments, shapes, surf_2D, surf_3D
