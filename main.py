@@ -169,9 +169,11 @@ def getMousePos():
 def render3D(dist_list):
     pixel_width = surf_width / num_rays
     for i in range(num_rays):
-        pixel_height = 2000 / dist_list[i]
-        rect = pygame.Rect(i * pixel_width, surf_height / 2 - pixel_height / 2, pixel_width, pixel_height)
-        pygame.draw.rect(surf_3D, (255, 255, 255), rect)
+        if dist_list[i] <= render_dist:
+            pixel_height = farthest_dist / dist_list[i]
+            rect = pygame.Rect(i * pixel_width, surf_height / 2 - pixel_height / 2, pixel_width, pixel_height)
+            colour = 255 - (255 / render_dist) * dist_list[i] ## Mapping 0 -> render_dist to 255 -> 0
+            pygame.draw.rect(surf_3D, [colour] * 3, rect)
 
 # CONSTANTS
 eps = 0.00001 ## Very small number
@@ -179,6 +181,8 @@ boundary_width = 2 ## Width of the boundary lines
 draw_rays = True ## Draw individual rays
 draw_light = False ## Draw light polygon
 num_rays = 100 ## Number of rays to be cast
+farthest_dist = math.sqrt(surf_width ** 2 + surf_height ** 2) ## Calculate farthest possible distance for render3D()
+render_dist = farthest_dist / 2 ## Maximum distance for rendering
 
 def setup():
     global finished, particle, segments, shapes, surf_2D, surf_3D
