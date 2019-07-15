@@ -36,13 +36,13 @@ class Particle:
         self.moving = False
         self.moving_dir = []
 
-    def cast(self, fixed_points):
+    def cast(self):
         self.rays = []
         for i in range(num_rays):
             start_angle = self.angle - self.fov / 2
             self.rays.append(Ray(self.pos, start_angle + i * (self.fov / num_rays)))
 
-    def update(self, lookingAt, walls, fixed_points):
+    def update(self, lookingAt, walls):
         ## Moving the particle
         for dir in self.moving_dir:
             new_pos = self.pos + directions[dir]
@@ -53,7 +53,7 @@ class Particle:
         self.angle = self.pos.angleTo(lookingAt)
         self.dir = lookingAt - self.pos
 
-        self.cast(fixed_points) ## Cast rays
+        self.cast()
 
         self.points = []
         for ray in self.rays:
@@ -159,19 +159,6 @@ def getMousePos():
     mouse_pos = Vec2D(*pygame.mouse.get_pos())
     return mouse_pos
 
-def getFixedPoints(segs):
-    points = {
-        'intersects': [],
-        'edges': []
-    }
-    for i in range(len(segs)):
-        for seg in segs[i + 1:]:
-            point = segs[i].intersect(seg)
-            if point: points['intersects'].append(point)
-        points['edges'].append(segs[i].p1)
-        points['edges'].append(segs[i].p2)
-    return points
-
 # CONSTANTS
 eps = 0.00001 ## Very small number
 boundary_width = 2 ## Width of the boundary lines
@@ -180,7 +167,7 @@ draw_light = False ## Draw light polygon
 num_rays = 100
 
 def setup():
-    global finished, particle, segments, fixed_points, shapes, surf_2D, surf_3D
+    global finished, particle, segments, shapes, surf_2D, surf_3D
     finished = False
 
     ## Particle(starting_pos)
@@ -193,9 +180,6 @@ def setup():
         p2 = Vec2D(random.randint(0, surf_width), random.randint(0, surf_height))
         segments.append(Segment(p1, p2))
 
-    ## Calculate fixed points for the random walls
-    fixed_points = getFixedPoints(segments)
-
     ## Custom shapes
     shapes = [
         ## Bounding box
@@ -205,16 +189,8 @@ def setup():
     ]
 
     for shape in shapes:
-        ## Adding each shape's sides to segments and calculating intersections with segments
         for side in shape.segments:
             segments.append(side)
-            for segment in segments:
-                if not segment in shape.segments:
-                    point = side.intersect(segment)
-                    if point: fixed_points['intersects'].append(point)
-        ## Added vertices of shape to fixed points
-        for point in shape.points:
-            fixed_points['edges'].append(point)
 
     surf_2D = pygame.Surface((surf_width, surf_height))
     surf_3D = pygame.Surface((surf_width, surf_height))
@@ -246,7 +222,7 @@ while True:
                     particle.moving_dir.remove(chr(event.key))
                 except ValueError: pass ## To catch error when resetting while still moving
 
-    particle.update(getMousePos(), segments, fixed_points)
+    particle.update(getMousePos(), segments)
     particle.show()
 
     for segment in segments:
