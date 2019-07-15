@@ -42,6 +42,13 @@ class Particle:
             start_angle = self.angle - self.fov / 2
             self.rays.append(Ray(self.pos, start_angle + i * (self.fov / num_rays)))
 
+    def calcDists(self):
+        dist_list = []
+        for i in range(num_rays):
+            dist = self.pos.distTo(self.points[i])
+            dist_list.append(dist)
+        return dist_list
+
     def update(self, lookingAt, walls):
         ## Moving the particle
         for dir in self.moving_dir:
@@ -61,7 +68,6 @@ class Particle:
             if draw_rays:
                 ray.show() ## Draw each ray
         self.points.append(self.pos) ## Closing off polygon with self.pos
-
 
     def show(self):
         ## Drawing light
@@ -159,6 +165,13 @@ def getMousePos():
     mouse_pos = Vec2D(*pygame.mouse.get_pos())
     return mouse_pos
 
+def render3D(dist_list):
+    pixel_width = surf_width / num_rays
+    for i in range(num_rays):
+        pixel_height = 2000 / dist_list[i]
+        rect = pygame.Rect(i * pixel_width, surf_height / 2 - pixel_height / 2, pixel_width, pixel_height)
+        pygame.draw.rect(surf_3D, (255, 255, 255), rect)
+
 # CONSTANTS
 eps = 0.00001 ## Very small number
 boundary_width = 2 ## Width of the boundary lines
@@ -224,6 +237,9 @@ while True:
 
     particle.update(getMousePos(), segments)
     particle.show()
+
+    dists = particle.calcDists()
+    render3D(dists)
 
     for segment in segments:
         segment.show()
