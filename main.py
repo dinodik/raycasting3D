@@ -8,6 +8,9 @@ width, height = 1280, 400
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Ray Casting")
 
+pygame.mouse.set_visible(False)
+pygame.event.set_grab(True)
+
 surf_width, surf_height = int(width / 2), height
 
 colours = {
@@ -23,6 +26,7 @@ class Particle:
     def __init__(self, pos):
         self.pos = pos
         self.fov = math.pi / 3
+        self.angle = 0
         self.colour = colours['particle']
         self.size = 8
         self.speed = 4
@@ -48,23 +52,22 @@ class Particle:
             dist_list.append(dist)
         return dist_list
 
-    def update(self, lookingAt, walls):
-        ## Set viewing angle to determine FOV range
-        self.angle = self.pos.angleTo(lookingAt)
-        self.dir = lookingAt - self.pos
+    def update(self, mouse_movement, walls):
+        ## Set viewing angle to determine FOV range, also for first person movement
+        self.angle += mouse_movement.x * mouse_sensitivity / 100 ## Arbitrary 100
+        self.dir = Vec2D(math.cos(self.angle), math.sin(self.angle)).normalise()
 
         ## Moving the particle
-        front = self.dir.normalise()
         for dir in self.moving_dir:
             if dir == 'w':
-                new_pos = self.pos + front * self.speed
+                new_pos = self.pos + self.dir * self.speed
             elif dir == 'a':
-                new_pos = self.pos + front.perpendicular() * self.speed
+                new_pos = self.pos + self.dir.perpendicular() * self.speed
             elif dir == 's':
-                new_pos = self.pos - front * self.speed
+                new_pos = self.pos - self.dir * self.speed
             elif dir == 'd':
-                new_pos = self.pos - front.perpendicular() * self.speed
-            if 0 < new_pos.x < surf_width and 0 < new_pos.y < surf_height:  ## If in screen
+                new_pos = self.pos - self.dir.perpendicular() * self.speed
+            if 0 < new_pos.x < surf_width - boundary_width and 0 < new_pos.y < surf_height - boundary_width:  ## If in screen
                 self.pos = new_pos
 
         self.cast()
@@ -172,6 +175,10 @@ def getMousePos():
     mouse_pos = Vec2D(*pygame.mouse.get_pos())
     return mouse_pos
 
+def getRelMousePos():
+    rel_mouse_pos = Vec2D(*pygame.mouse.get_rel())
+    return rel_mouse_pos
+
 def map(val, in_min, in_max, out_min, out_max):
     return out_min + ((out_max - out_min) / (in_max - in_min) * (val - in_min))
 
@@ -192,6 +199,7 @@ draw_light = False ## Draw light polygon
 num_rays = 100 ## Number of rays to be cast
 farthest_dist = math.sqrt(surf_width ** 2 + surf_height ** 2) ## Calculate farthest possible distance for render3D()
 render_dist = farthest_dist ## Maximum distance for rendering
+mouse_sensitivity = 0.5 ## Self-explanatory
 
 def setup():
     global finished, particle, segments, shapes, surf_2D, surf_3D
@@ -249,7 +257,7 @@ while True:
                     particle.moving_dir.remove(chr(event.key))
                 except ValueError: pass ## To catch error when resetting while still moving
 
-    particle.update(getMousePos(), segments)
+    particle.update(getRelMousePos(), segments)
     particle.show()
 
     dists = particle.calcDists()
