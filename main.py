@@ -28,7 +28,7 @@ class Particle:
         self.fov = math.pi / 3
         self.angle = 0
         self.colour = colours['particle']
-        self.size = 8
+        self.radius = 4
         self.moving = False
         self.moving_dir = []
 
@@ -45,10 +45,9 @@ class Particle:
         for i in range(num_rays):
             dist = self.pos.distTo(self.points[i])
             ## Correct fish-eye effect
-            # angle = self.angle - self.fov / 2 + i * angle_per_ray
-            # perp_dist = abs(math.cos(angle) * dist)
-            # dist_list.append(perp_dist)
-            dist_list.append(dist)
+            angle = self.fov / 2 - i * angle_per_ray
+            perp_dist = math.cos(angle) * dist
+            dist_list.append(perp_dist)
         return dist_list
 
     def update(self, mouse_movement, walls):
@@ -68,8 +67,8 @@ class Particle:
                 d_pos = self.dir.perpendicular() * -1
             else: d_pos = Vec2D(0, 0)
             new_pos = self.pos + d_pos * particle_speed
-            if 0 < new_pos.x < surf_width - boundary_width and 0 < new_pos.y < surf_height - boundary_width:  ## If in screen
-                if surf_2D.get_at((new_pos + (d_pos * self.size / 2)).tuple()) == colours['background']:
+            if self.radius < new_pos.x < surf_width - boundary_width - self.radius and self.radius < new_pos.y < surf_height - boundary_width - self.radius:  ## If in screen
+                if surf_2D.get_at((new_pos + (d_pos * self.radius)).tuple()) == colours['background']:
                     self.pos = new_pos
 
         self.cast()
@@ -88,7 +87,7 @@ class Particle:
         else:
             pygame.draw.polygon(surf_2D, colours['light'], [point.tuple() for point in self.points], 2) ## Draw outline
         ## Drawing particle
-        pygame.draw.circle(surf_2D, self.colour, self.pos.tuple(), int(self.size / 2))
+        pygame.draw.circle(surf_2D, self.colour, self.pos.tuple(), self.radius)
 
 class Ray:
 
@@ -198,7 +197,7 @@ eps = 0.00001 ## Very small number
 boundary_width = 2 ## Width of the boundary lines
 draw_rays = True ## Draw individual rays
 draw_light = False ## Draw light polygon
-num_rays = 100 ## Number of rays to be cast
+num_rays = 64 ## Number of rays to be cast, eg. 10 16 20 32 40 64 80 128 160 320 640
 farthest_dist = math.sqrt(surf_width ** 2 + surf_height ** 2) ## Calculate farthest possible distance for render3D()
 render_dist = farthest_dist ## Maximum distance for rendering
 mouse_sensitivity = 0.4 ## Self-explanatory
