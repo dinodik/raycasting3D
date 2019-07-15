@@ -4,9 +4,11 @@ from Vector2D import Vec2D
 
 pygame.init()
 
-width, height = 640, 400
+width, height = 1280, 400
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Ray Casting")
+
+surf_width, surf_height = width / 2, height
 
 colours = {
     'background': (50, 50, 50),
@@ -78,7 +80,7 @@ class Particle:
         ## Moving the particle
         for dir in self.moving_dir:
             new_pos = self.pos + directions[dir]
-            if 0 < new_pos.x < width and 0 < new_pos.y < height: ## If in screen
+            if 0 < new_pos.x < surf_width and 0 < new_pos.y < surf_height: ## If in screen
                 self.pos = new_pos
 
         ## Set viewing angle to determine FOV range
@@ -108,15 +110,15 @@ class Particle:
         ## Drawing light
         if draw_light:
             ## Draw on alpha surface
-            # surf_ray = pygame.Surface((width, height))
+            # surf_ray = pygame.Surface((surf_width, surf_height))
             # surf_ray.set_alpha(100)
             # pygame.draw.polygon(surf_ray, colours['light'], [point.tuple() for point in points]) ## Filled light
-            # screen.blit(surf_ray, (0, 0))
-            pygame.draw.polygon(screen, colours['light'], [point.tuple() for point in points])  ## Filled light
+            # surf_2D.blit(surf_ray, (0, 0))
+            pygame.draw.polygon(surf_2D, colours['light'], [point.tuple() for point in points])  ## Filled light
         else:
-            pygame.draw.polygon(screen, colours['light'], [point.tuple() for point in points], 2) ## Draw outline
+            pygame.draw.polygon(surf_2D, colours['light'], [point.tuple() for point in points], 2) ## Draw outline
         ## Drawing particle
-        pygame.draw.circle(screen, self.colour, self.pos.tuple(), int(self.size / 2))
+        pygame.draw.circle(surf_2D, self.colour, self.pos.tuple(), int(self.size / 2))
 
 class Ray:
 
@@ -161,7 +163,7 @@ class Ray:
         return closest_point
 
     def show(self):
-        pygame.draw.line(screen, self.colour, self.start_pos.tuple(), self.end_pos.tuple())
+        pygame.draw.line(surf_2D, self.colour, self.start_pos.tuple(), self.end_pos.tuple())
 
 ## 'Wall' segment
 class Segment:
@@ -185,7 +187,7 @@ class Segment:
             return
 
     def show(self):
-        pygame.draw.line(screen, colours['segment'], self.p1.tuple(), self.p2.tuple())
+        pygame.draw.line(surf_2D, colours['segment'], self.p1.tuple(), self.p2.tuple())
 
 ## Shape class designed for shapes with sides that do not intersect
 class Shape:
@@ -198,7 +200,7 @@ class Shape:
         self.width = width
 
     def show(self):
-        pygame.draw.polygon(screen, self.colour, [point.tuple() for point in self.points], self.width)
+        pygame.draw.polygon(surf_2D, self.colour, [point.tuple() for point in self.points], self.width)
 
 def getMousePos():
     ## Converting mouse position to a 2D Vector
@@ -225,17 +227,17 @@ draw_rays = False ## Draw individual rays
 draw_light = True ## Draw light polygon
 
 def setup():
-    global finished, particle, segments, fixed_points, shapes
+    global finished, particle, segments, fixed_points, shapes, surf_2D, surf_3D
     finished = False
 
     ## Particle(starting_pos)
-    particle = Particle(Vec2D(width / 2, height / 2))
+    particle = Particle(Vec2D(surf_width / 2, surf_height / 2))
 
     segments = []
     ## Random walls
     for i in range(5):
-        p1 = Vec2D(random.randint(0, width), random.randint(0, height))
-        p2 = Vec2D(random.randint(0, width), random.randint(0, height))
+        p1 = Vec2D(random.randint(0, surf_width), random.randint(0, surf_height))
+        p2 = Vec2D(random.randint(0, surf_width), random.randint(0, surf_height))
         segments.append(Segment(p1, p2))
 
     ## Calculate fixed points for the random walls
@@ -244,7 +246,7 @@ def setup():
     ## Custom shapes
     shapes = [
         ## Bounding box
-        Shape(4, colours['boundary'], [Vec2D(0, 0), Vec2D(width - boundary_width, 0), Vec2D(width - boundary_width, height - boundary_width), Vec2D(0, height - boundary_width)], boundary_width),
+        Shape(4, colours['boundary'], [Vec2D(0, 0), Vec2D(surf_width - boundary_width, 0), Vec2D(surf_width - boundary_width, surf_height - boundary_width), Vec2D(0, surf_height - boundary_width)], boundary_width),
         ## Test octagon
         Shape(8, (120, 255, 255), [Vec2D(358, 108), Vec2D(282, 108), Vec2D(228, 162), Vec2D(228, 238), Vec2D(282, 292), Vec2D(358, 292), Vec2D(412, 238), Vec2D(412, 162)], 2)
     ]
@@ -261,11 +263,15 @@ def setup():
         for point in shape.points:
             fixed_points['edges'].append(point)
 
+    surf_2D = pygame.Surface((surf_width, surf_height))
+    surf_3D = pygame.Surface((surf_width, surf_height))
+
 setup()
 
 while True:
     if not finished:
-        screen.fill(colours['background'])
+        surf_2D.fill(colours['background'])
+        surf_3D.fill(colours['background'])
 
     for event in pygame.event.get():
         if event.type == QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -295,5 +301,8 @@ while True:
 
     for shape in shapes:
         shape.show()
+
+    screen.blit(surf_2D, (0, 0))
+    screen.blit(surf_3D, (surf_width, 0))
 
     pygame.display.update()
