@@ -37,44 +37,10 @@ class Particle:
         self.moving_dir = []
 
     def cast(self, fixed_points):
-        ## Left FOV boundary
-        left_bound = Ray(self.pos, self.angle - self.fov / 2)
-        self.rays = [left_bound]
-
-        angles = {
-            'intersects': [],
-            'edges': []
-        }
-
-        ## Calculating all angles to points
-        for point in fixed_points['intersects']:
-            angles['intersects'].append(self.pos.angleTo(point))
-
-        for point in fixed_points['edges']:
-            angles['edges'].append(self.pos.angleTo(point))
-
-        ## Adding only points that are in view
-        for i in range(len(fixed_points['intersects'])):
-            if self.inFOV(angles['intersects'][i]):
-                self.rays.append(Ray(self.pos, angles['intersects'][i]))
-
-        for i in range(len(fixed_points['edges'])):
-            if self.inFOV(angles['edges'][i]):
-                ## +/- eps to 'look past' corners
-                # self.rays.append(Ray(self.pos, angles['edges][i]))
-                self.rays.append(Ray(self.pos, angles['edges'][i] + eps))
-                self.rays.append(Ray(self.pos, angles['edges'][i] - eps))
-
-        ## Right FOV boundary
-        right_bound = Ray(self.pos, self.angle + self.fov / 2)
-        self.rays.append(right_bound)
-
-    def inFOV(self, angle):
-        adj_angle = ((angle % math.tau) - self.angle_origin) % math.tau ## Adjusting angle to the new 0 point
-        if 0 < adj_angle < self.fov: ## If adjusted angle is within the field of view
-            return True
-        else:
-            return False
+        self.rays = []
+        for i in range(num_rays):
+            start_angle = self.angle - self.fov / 2
+            self.rays.append(Ray(self.pos, start_angle + i * (self.fov / num_rays)))
 
     def update(self, lookingAt, walls, fixed_points):
         ## Moving the particle
@@ -87,8 +53,6 @@ class Particle:
         self.angle = self.pos.angleTo(lookingAt)
         self.dir = lookingAt - self.pos
 
-        self.angle_origin = (self.angle - self.fov / 2) % math.tau  ## This is the new 0 point - the lower_bound of the FOV
-
         self.cast(fixed_points) ## Cast rays
 
         self.points = []
@@ -96,27 +60,15 @@ class Particle:
             self.points.append(ray.update(walls))
             if draw_rays:
                 ray.show() ## Draw each ray
+        self.points.append(self.pos) ## Closing off polygon with self.pos
+
 
     def show(self):
-        ## Sort points in order of angle
-        left_bound, right_bound = self.points[0], self.points[-1]
-        points = sorted(self.points[1:-1], key=lambda point: (((self.pos.angleTo(point) + eps) % math.tau) - self.angle_origin) % math.tau) ## Offsetting each angle to be relative to angle_origin
-        ## Ensuring left and right boundaries are the first and last points (excluding self.pos)
-        points.insert(0, left_bound)
-        points.append(right_bound)
-
-        points.append(self.pos) ## Closing off polygon with self.pos
-
         ## Drawing light
         if draw_light:
-            ## Draw on alpha surface
-            # surf_ray = pygame.Surface((surf_width, surf_height))
-            # surf_ray.set_alpha(100)
-            # pygame.draw.polygon(surf_ray, colours['light'], [point.tuple() for point in points]) ## Filled light
-            # surf_2D.blit(surf_ray, (0, 0))
-            pygame.draw.polygon(surf_2D, colours['light'], [point.tuple() for point in points])  ## Filled light
+            pygame.draw.polygon(surf_2D, colours['light'], [point.tuple() for point in self.points])  ## Filled light
         else:
-            pygame.draw.polygon(surf_2D, colours['light'], [point.tuple() for point in points], 2) ## Draw outline
+            pygame.draw.polygon(surf_2D, colours['light'], [point.tuple() for point in self.points], 2) ## Draw outline
         ## Drawing particle
         pygame.draw.circle(surf_2D, self.colour, self.pos.tuple(), int(self.size / 2))
 
@@ -223,8 +175,9 @@ def getFixedPoints(segs):
 # CONSTANTS
 eps = 0.00001 ## Very small number
 boundary_width = 2 ## Width of the boundary lines
-draw_rays = False ## Draw individual rays
-draw_light = True ## Draw light polygon
+draw_rays = True ## Draw individual rays
+draw_light = False ## Draw light polygon
+num_rays = 100
 
 def setup():
     global finished, particle, segments, fixed_points, shapes, surf_2D, surf_3D
