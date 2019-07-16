@@ -193,7 +193,6 @@ def render3D(dist_list):
             pygame.draw.rect(surf_3D, [colour] * 3, rect)
 
 # CONSTANTS
-eps = 0.00001 ## Very small number
 boundary_width = 2 ## Width of the boundary lines
 draw_rays = True ## Draw individual rays
 draw_light = False ## Draw light polygon
@@ -216,8 +215,8 @@ def setup():
         Shape(4, colours['boundary'], [Vec2D(0, 0), Vec2D(surf_width - boundary_width, 0), Vec2D(surf_width - boundary_width, surf_height - boundary_width), Vec2D(0, surf_height - boundary_width)], fill=False),
         ## Test shapes
         Shape(8, (120, 255, 255), [Vec2D(358, 108), Vec2D(282, 108), Vec2D(228, 162), Vec2D(228, 238), Vec2D(282, 292), Vec2D(358, 292), Vec2D(412, 238), Vec2D(412, 162)]),
-        Shape(6, (120, 255, 255), [Vec2D(50, 50), Vec2D(50, 150), Vec2D(85, 150), Vec2D(85, 100), Vec2D(120, 100), Vec2D(120, 50)])
-
+        Shape(6, (120, 255, 255), [Vec2D(50, 50), Vec2D(50, 150), Vec2D(85, 150), Vec2D(85, 100), Vec2D(120, 100), Vec2D(120, 50)]),
+        Shape(5, (120, 255, 255), [Vec2D(500, 240), Vec2D(443, 281), Vec2D(465, 349), Vec2D(535, 349), Vec2D(557, 281)])
     ]
 
     segments = []
