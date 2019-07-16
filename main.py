@@ -171,11 +171,7 @@ class Shape:
     def show(self):
         pygame.draw.polygon(surf_2D, self.colour, [point.tuple() for point in self.points], self.width)
 
-def getMousePos():
-    ## Converting mouse position to a 2D Vector
-    mouse_pos = Vec2D(*pygame.mouse.get_pos())
-    return mouse_pos
-
+## Get relative mouse position as a Vector2D obj
 def getRelMousePos():
     rel_mouse_pos = Vec2D(*pygame.mouse.get_rel())
     return rel_mouse_pos
