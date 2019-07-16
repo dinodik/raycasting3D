@@ -187,7 +187,8 @@ def render3D(dist_list):
     line_width = surf_width / num_rays
     for i in range(num_rays):
         if dist_list[i] <= render_dist:
-            line_height = map(dist_list[i], 0, render_dist, surf_height, 0) # farthest_dist / dist_list[i] ## Calculate each lines height relative to the ray's distance
+            # line_height = map(dist_list[i], 0, render_dist, surf_height, 0) # farthest_dist / dist_list[i] ## Calculate each lines height relative to the ray's distance
+            line_height = farthest_dist / dist_list[i] * 50 ## Arbitrary constant
             rect = pygame.Rect(i * line_width, surf_height / 2 - line_height / 2, line_width, line_height)
             colour = map(dist_list[i], 0, render_dist, 255, 0) ## Calculate colour based on distance, eg. farther away, darker
             pygame.draw.rect(surf_3D, [colour] * 3, rect)
@@ -196,7 +197,7 @@ def render3D(dist_list):
 boundary_width = 2 ## Width of the boundary lines
 draw_rays = True ## Draw individual rays
 draw_light = False ## Draw light polygon
-num_rays = 64 ## Number of rays to be cast, eg. 10 16 20 32 40 64 80 128 160 320 640
+num_rays = 32 ## Number of rays to be cast, eg. 10 16 20 32 40 64 80 128 160 320 640
 farthest_dist = math.sqrt(surf_width ** 2 + surf_height ** 2) ## Calculate farthest possible distance for render3D()
 render_dist = farthest_dist ## Maximum distance for rendering
 mouse_sensitivity = 0.4 ## Self-explanatory
