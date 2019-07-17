@@ -1,4 +1,4 @@
-import pygame, sys, math, random
+import pygame, sys, math
 from pygame.locals import *
 from Vector2D import Vec2D
 
@@ -119,10 +119,11 @@ class Ray:
         ## Each update the ray looks for the closest intersection from its position towards its angle
         closest_dist = math.inf
         closest_point = None
+
         for wall in walls:
             point = self.intersect(wall.p1, wall.p2)
             if point:
-                dist = self.start_pos.distTo(point)
+                dist = self.start_pos.sqrDistTo(point) ## Square of dist to save processing
                 if dist < closest_dist:
                     closest_dist = dist
                     closest_point = point
@@ -193,7 +194,7 @@ def render3D(dist_list):
 boundary_width = 2 ## Width of the boundary lines
 draw_rays = True ## Draw individual rays
 draw_light = False ## Draw light polygon
-num_rays = 32 ## Number of rays to be cast, eg. 10 16 20 32 40 64 80 128 160 320 640
+num_rays = 80 ## Number of rays to be cast, eg. 10 16 20 32 40 64 80 128 160 320 640
 farthest_dist = math.sqrt(surf_width ** 2 + surf_height ** 2) ## Calculate farthest possible distance for render3D()
 render_dist = farthest_dist ## Maximum distance for rendering
 mouse_sensitivity = 0.4 ## Self-explanatory

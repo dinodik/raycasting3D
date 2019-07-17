@@ -25,6 +25,9 @@ class Vec2D:
     def distTo(self, other):
         return sqrt((other.x - self.x) ** 2 + (other.y - self.y) ** 2)
 
+    def sqrDistTo(self, other):
+        return (other.x - self.x) ** 2 + (other.y - self.y) ** 2
+
     def angleTo(self, other):
         return atan2(other.y - self.y, other.x - self.x)
 
